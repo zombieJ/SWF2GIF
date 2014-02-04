@@ -120,7 +120,7 @@
 				exportFrameRate = Number(txt_fps.text);
 				exportTransColor = uint(txt_transColor.text);
 				
-				exportBitmap = new BitmapData(exportWidth, explicitHeight, true, exportTransColor);
+				exportBitmapList = new Array();
 				exportFile = new File(txt_path_out.text);
 				
 				// 初始化转换器
@@ -143,34 +143,68 @@
 			protected var exportHeight:int;
 			protected var exportFrameRate:int;
 			protected var exportTransColor:uint;
-			protected var exportBitmap:BitmapData;
 			protected var exportFile:File;
 			protected var exportMovieClip:MovieClip;
+			
+			protected var exportBitmapList:Array;
+			protected var exportTimer:Timer;
 			protected function drawGIF(e:Event):void {
 				var currentFrame:int = exportMovieClip.currentFrame;
 				var totalFrame:int = exportMovieClip.totalFrames;
 				
 				// 生成帧图片
+				var exportBitmap:BitmapData = new BitmapData(exportWidth, explicitHeight, true, exportTransColor);
 				exportBitmap.fillRect(new Rectangle(0,0,exportWidth,explicitHeight), 0xFF000000 | exportTransColor);
 				exportBitmap.draw(swf_expoter);
 
 				// 添加帧
-				refreshTitle("完成 " + int(100.0 * currentFrame / totalFrame) + "%");
-				gif.addFrame(exportBitmap);
+				exportBitmapList.push(exportBitmap);
+				refreshTitle("截图 " + currentFrame + "/" + totalFrame);
 				
+				// 如果截图完毕，开始存图片吧
 				if(currentFrame == totalFrame) {
-					gif.finish();
 					exportMovieClip.removeEventListener(Event.ENTER_FRAME, drawGIF);
+
+					exportBitmapListPos = 0;
+					
+					exportTimer = new Timer(500);
+					exportTimer.addEventListener(TimerEvent.TIMER, exportTimerHandler);
+					exportTimer.start();
+				}
+			}
+			
+			// 计时器导出（为了延迟卡的现象 T_T）
+			protected var exportBitmapListPos:int;
+			protected function exportTimerHandler(event:TimerEvent):void {
+				if(exportBitmapListPos >= exportBitmapList.length) {
+					refreshTitle("死循环！");
+					return;
+				}
+					
+				var exportBitmap:BitmapData = exportBitmapList[exportBitmapListPos];
+				gif.addFrame(exportBitmap);
+					
+				exportBitmapListPos++;
+				refreshTitle("生成 " + int(100.0 * exportBitmapListPos / exportBitmapList.length) + "%");
+
+				if(exportBitmapListPos >= exportBitmapList.length) {
+					gif.finish();
 					
 					var fs:FileStream = new FileStream();
 					try {
 						fs.open(exportFile, FileMode.WRITE);
 						fs.writeBytes(gif.stream, 0, gif.stream.length);
 						fs.close();
-						Alert.show("导出完成，" + "导出" + currentFrame + "帧。", "完成");
+						Alert.show("导出完成，" + "导出" + exportBitmapListPos + "帧。", "完成");
+						refreshTitle();
 					} catch(e:Error) {
 						Alert.show(e.toString());
 					}
+
+					exportTimer.removeEventListener(TimerEvent.TIMER, exportTimerHandler);
+					exportTimer.stop();
+
+					exportBitmapList = null;
 					swf_expoter.source = null;
 					btn_generate.enabled = true;
 				}
