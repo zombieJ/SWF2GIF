@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="600" height="300" contentCreationComplete="contentCreated(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.PNGEncoder;
+			
+			import org.gif.encoder.GIFEncoder;
+			
+			protected function contentCreated(event:FlexEvent):void {
+				refreshTitle();
+			}
+			protected function refreshTitle(title:String = null):void {
+				this.title = "SWf2GIF" + (title == null ? "" : " - " + title);
+			}
+			
+			// 打开swf文件
+			protected function btn_openSWF(event:MouseEvent):void {
+				var file:File = new File();
+				file.browseForOpen("选择你的SWF文件");
+				file.addEventListener(Event.SELECT, fileSelectpd);
+			}
+			private function fileSelectpd(e:Event):void {
+				var path:String = e.target.nativePath;
+				txt_path.text = path;
+				swf_cntr.source = path;
+			}
+			
+			
+			
+			// 导出gif路径
+			protected function btn_exportGIF(event:MouseEvent):void {
+				var file:File = new File();
+				file.browseForDirectory("选择导出的文件夹路径");
+				file.addEventListener(Event.SELECT, exportSelectpd);
+			}
+			private function exportSelectpd(e:Event):void {
+				var path:String = e.target.nativePath;
+				var swf_path:String = txt_path.text;
+				var file:File = new File(swf_path);
+				var fileName:String = file.name.replace(/\.swf/i, ".gif");
+				txt_path_out.text = path + File.separator + fileName;
+			}
+
+			
+			
+			// swf载入完成操作
+			protected function swf_completeView(e:Event):void {
+				var info:LoaderInfo = swf_cntr.content.loaderInfo;
+				txt_width.text = info.width + "";
+				txt_height.text = info.height + "";
+				txt_fps.text = info.frameRate + "";
+				
+				// 不支持旧版本的动画
+				if (swf_cntr.content is AVM1Movie) {
+					btn_generate.enabled = false;
+					Alert.show("不支持旧版本的swf啦~", "抱歉！");
+					return;
+				} else {
+					btn_generate.enabled = true;
+				}
+			}
+			protected function swf_completeExport(e:Event):void {
+				var mc:MovieClip = swf_expoter.content as MovieClip;
+				mc.gotoAndStop(1);
+				resize();
+				
+				exportGIF();
+			}
+			// 调整导出文件大小
+			protected function resize(e:Event = null):void {
+				var width:int = Number(txt_width.text);
+				var height:int = Number(txt_height.text);
+
+				swf_expoter.width = width;
+				swf_expoter.height = height;
+			}
+			
+			
+			
+			// 导出图片
+			protected function btn_generatePNG(event:MouseEvent):void {
+				var width:int = Number(txt_width.text);
+				var height:int = Number(txt_height.text);
+				
+				var info:LoaderInfo = swf_expoter.content.loaderInfo;
+				var pngEncoder:PNGEncoder = new PNGEncoder();
+				var bitMapData:BitmapData = new BitmapData(width, height, true, 0x000000); 
+				bitMapData.draw(swf_expoter);
+				
+				var imageByteArray:ByteArray = pngEncoder.encode(bitMapData);
+				
+				var file:File = new File(txt_path_out.text);
+				var fs:FileStream = new FileStream();
+				try {
+					fs.open(file, FileMode.WRITE);
+					fs.writeBytes(imageByteArray);
+					fs.close();
+					Alert.show("导出完成!" + width + "/" + height);
+				} catch(e:Error) {
+					Alert.show(e.toString());
+				}
+			}
+			
+			protected function btn_generateGIF(event:MouseEvent):void {
+				btn_generate.enabled = false;
+				swf_expoter.source = txt_path.text;
+			}
+			
+			
+			// 导出图片的实体操作
+			protected function exportGIF():void {
+				exportWidth = Number(txt_width.text);
+				explicitHeight = Number(txt_height.text);
+				exportFrameRate = Number(txt_fps.text);
+				exportTransColor = uint(txt_transColor.text);
+				
+				exportBitmap = new BitmapData(exportWidth, explicitHeight, true, exportTransColor);
+				exportFile = new File(txt_path_out.text);
+				
+				// 初始化转换器
+				gif = new GIFEncoder();
+				gif.setFrameRate(exportFrameRate);
+				gif.setTransparent(exportTransColor);
+				gif.setQuality(100);
+				gif.setRepeat(0);
+				
+				// 开始记录器
+				gif.start();
+
+				exportMovieClip = swf_expoter.content as MovieClip;
+				exportMovieClip.addEventListener(Event.ENTER_FRAME, drawGIF);
+				exportMovieClip.gotoAndPlay(1);
+			}
+			
+			protected var gif:GIFEncoder;
+			protected var exportWidth:int;
+			protected var exportHeight:int;
+			protected var exportFrameRate:int;
+			protected var exportTransColor:uint;
+			protected var exportBitmap:BitmapData;
+			protected var exportFile:File;
+			protected var exportMovieClip:MovieClip;
+			protected function drawGIF(e:Event):void {
+				var currentFrame:int = exportMovieClip.currentFrame;
+				var totalFrame:int = exportMovieClip.totalFrames;
+				
+				// 生成帧图片
+				exportBitmap.fillRect(new Rectangle(0,0,exportWidth,explicitHeight), 0xFF000000 | exportTransColor);
+				exportBitmap.draw(swf_expoter);
+
+				// 添加帧
+				refreshTitle("完成 " + int(100.0 * currentFrame / totalFrame) + "%");
+				gif.addFrame(exportBitmap);
+				
+				if(currentFrame == totalFrame) {
+					gif.finish();
+					exportMovieClip.removeEventListener(Event.ENTER_FRAME, drawGIF);
+					
+					var fs:FileStream = new FileStream();
+					try {
+						fs.open(exportFile, FileMode.WRITE);
+						fs.writeBytes(gif.stream, 0, gif.stream.length);
+						fs.close();
+						Alert.show("导出完成，" + "导出" + currentFrame + "帧。", "完成");
+					} catch(e:Error) {
+						Alert.show(e.toString());
+					}
+					swf_expoter.source = null;
+					btn_generate.enabled = true;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Group width="100%" height="100%" fontFamily="微软雅黑">
+		<s:Group left="10" right="10" top="10">
+			<s:Button width="94" label="选择SWF文件" click="btn_openSWF(event)"/>
+			<s:TextInput id="txt_path" y="0" left="102" right="113" editable="false" />
+			<s:Button x="0" y="29" width="94" label="导出GIF路径" click="btn_exportGIF(event)"/>
+			<s:TextInput id="txt_path_out" y="28" left="102" right="113"
+						 text="C:\Users\DeadPeople\Desktop\ZZZ.gif"/>
+			
+			<s:Button right="0" width="105" label="导出" visible="false" click="btn_generatePNG(event)"/>
+			<s:Button id="btn_generate" right="0" top="0" bottom="0" width="105" label="导出"
+					  enabled="false" click="btn_generateGIF(event)"/>
+		</s:Group>
+		<s:Group left="10" right="10" top="68" bottom="27">
+			<s:SWFLoader id="swf_cntr" left="0" right="202" top="0" bottom="0" complete="swf_completeView(event)"/>
+			<s:Group right="0" top="0" bottom="0" width="194">
+				<s:Label y="0" left="0" height="23" text="导出宽度" verticalAlign="middle"/>
+				<s:Label x="0" y="31" height="23" text="导出高度" verticalAlign="middle"/>
+				<s:Label x="0" y="62" height="23" text="动画帧率" verticalAlign="middle"/>
+				<s:Label x="0" y="93" height="23" text="透明颜色" verticalAlign="middle"/>
+				<s:TextInput id="txt_width" y="0" right="0" change="resize(event)"/>
+				<s:TextInput id="txt_height" y="31" right="0" change="resize(event)"/>
+				<s:TextInput id="txt_fps" y="62" right="0"/>
+				<s:TextInput id="txt_transColor" y="93" right="0" text="0xFFFEFD"/>
+			</s:Group>
+			
+		</s:Group>
+		<s:Group left="10" right="10" bottom="10" height="10">
+			<s:SWFLoader id="swf_expoter" x="0" y="0" complete="swf_completeExport(event)"/>
+		</s:Group>
+	</s:Group>
+</s:WindowedApplication>
