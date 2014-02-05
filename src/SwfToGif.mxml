@@ -22,7 +22,7 @@
 			// 打开swf文件
 			protected function btn_openSWF(event:MouseEvent):void {
 				var file:File = new File();
-				file.browseForOpen("选择你的SWF文件");
+				file.browseForOpen("Open SWF");
 				file.addEventListener(Event.SELECT, fileSelectpd);
 			}
 			private function fileSelectpd(e:Event):void {
@@ -36,7 +36,7 @@
 			// 导出gif路径
 			protected function btn_exportGIF(event:MouseEvent):void {
 				var file:File = new File();
-				file.browseForDirectory("选择导出的文件夹路径");
+				file.browseForDirectory("Export Path");
 				file.addEventListener(Event.SELECT, exportSelectpd);
 			}
 			private function exportSelectpd(e:Event):void {
@@ -59,7 +59,7 @@
 				// 不支持旧版本的动画
 				if (swf_cntr.content is AVM1Movie) {
 					btn_generate.enabled = false;
-					Alert.show("不支持旧版本的swf啦~", "抱歉！");
+					Alert.show("Dosen't support old version swf.", "Sorry!");
 					return;
 				} else {
 					btn_generate.enabled = true;
@@ -174,8 +174,8 @@
 						
 						var ms:Number = (new Date()).time - exportDate;
 						
-						Alert.show("导出完成，" + "导出" + totalFrame +
-							"帧。耗时" + int(ms / 1000) + "秒", "完成");
+						Alert.show("Export done. Export " + totalFrame +
+							" frames. Cost " + int(ms / 1000) + " second.", "Export Done");
 						refreshTitle();
 					} catch(e:Error) {
 						Alert.show(e.toString());
