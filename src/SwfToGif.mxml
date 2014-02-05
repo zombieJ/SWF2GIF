@@ -13,10 +13,14 @@
 			
 			import org.gif.encoder.GIFEncoder;
 			
+			import spark.events.TextOperationEvent;
+			
 			
 			protected var originalWidth:int;
 			protected var originalHeight:int;
 			protected var originalFrameRate:int;
+			protected var originalTimes:int;		// Each frame takes millionSecond
+			protected var originalOldVersion:Boolean = false;
 			
 			protected var gif:GIFEncoder;
 			protected var exportWidth:int;
@@ -25,20 +29,24 @@
 			protected var exportTransColor:uint;
 			protected var exportFile:File;
 			protected var exportMovieClip:MovieClip;
-			
+			protected var exportTimes:int;
 			protected var exportDate:Number;
+			
+			protected var exportTimesStack:int;		// Each frame will add originalTimes. if over exportTimes, record frame.
 			
 			protected function contentCreated(event:FlexEvent):void {
 				refreshTitle();
+				refreshGeneratable();
 			}
 			protected function refreshTitle(title:String = null):void {
 				this.title = "SWf2GIF" + (title == null ? "" : " - " + title);
 			}
 			
-			// 打开swf文件
+			// Open swf file
 			protected function btn_openSWF(event:MouseEvent):void {
 				var file:File = new File();
-				file.browseForOpen("Open SWF");
+				var swfFilter:FileFilter = new FileFilter("Flash", "*.swf");
+				file.browseForOpen("Open SWF", [swfFilter]);
 				file.addEventListener(Event.SELECT, fileSelectpd);
 			}
 			private function fileSelectpd(e:Event):void {
@@ -47,10 +55,14 @@
 				swf_cntr.source = path;
 				refreshExportPath();
 			}
+			protected function txt_path_changeHandler(event:TextOperationEvent):void {
+				swf_cntr.source = txt_path.text;
+				refreshExportPath();
+			}
 			
 			
 			
-			// 导出gif路径
+			// Configue export path
 			protected function btn_exportGIF(event:MouseEvent):void {
 				var file:File = new File();
 				file.browseForDirectory("Export Path");
@@ -74,28 +86,35 @@
 					} catch(error:Error) {}
 					txt_path_out.text = path + fileName;
 				}
+				
+				// Refresh Generate Button Enabled
+				refreshGeneratable();
 			}
 
 			
 			
-			// swf载入完成操作
+			// swf loaded
 			protected function swf_completeView(e:Event):void {
 				var info:LoaderInfo = swf_cntr.content.loaderInfo;
 				originalWidth = info.width;
 				originalHeight = info.height;
 				originalFrameRate = info.frameRate;
+				originalTimes = 1000 / originalFrameRate;
+				
 				txt_width.text = originalWidth + "";
 				txt_height.text = originalHeight + "";
 				txt_fps.text = originalFrameRate + "";
 				
-				// 不支持旧版本的动画
+				// Not support old version swf
 				if (swf_cntr.content is AVM1Movie) {
-					btn_generate.enabled = false;
+					originalOldVersion = true;
 					Alert.show("Dosen't support old version swf.", "Sorry!");
-					return;
 				} else {
-					btn_generate.enabled = true;
+					originalOldVersion = false;
 				}
+				
+				// Refresh Generate Button Enabled
+				refreshGeneratable();
 			}
 			protected function swf_completeExport(e:Event):void {
 				var mc:MovieClip = swf_expoter.content as MovieClip;
@@ -104,7 +123,7 @@
 				
 				exportGIF();
 			}
-			// 调整导出文件大小
+			// Adjust export swf loader size
 			protected function resize(e:Event = null):void {
 				var width:int = Number(txt_width.text);
 				var height:int = Number(txt_height.text);
@@ -119,7 +138,7 @@
 			
 			
 			
-			// 导出图片
+			// Export png
 			protected function btn_generatePNG(event:MouseEvent):void {
 				var width:int = Number(txt_width.text);
 				var height:int = Number(txt_height.text);
@@ -137,19 +156,18 @@
 					fs.open(file, FileMode.WRITE);
 					fs.writeBytes(imageByteArray);
 					fs.close();
-					Alert.show("导出完成!" + width + "/" + height);
+					Alert.show("Export Done!");
 				} catch(e:Error) {
 					Alert.show(e.toString());
 				}
 			}
 			
 			protected function btn_generateGIF(event:MouseEvent):void {
-				btn_generate.enabled = false;
 				swf_expoter.source = txt_path.text;
 			}
 			
 			
-			// 导出图片的实体操作
+			// Export gif
 			protected function exportGIF():void {
 				exportWidth = Number(txt_width.text);
 				explicitHeight = Number(txt_height.text);
@@ -158,37 +176,45 @@
 				
 				exportFile = new File(txt_path_out.text);
 				exportDate = (new Date()).time;
+				exportTimes = 1000 / exportFrameRate;
 				
-				// 初始化转换器
+				// Initail recorder
 				gif = new GIFEncoder();
 				gif.setFrameRate(exportFrameRate);
 				gif.setTransparent(exportTransColor);
 				gif.setQuality(100);
 				gif.setRepeat(0);
 				
-				// 开始记录器
+				// Start recording
 				gif.start();
 
 				exportMovieClip = swf_expoter.content as MovieClip;
 				exportMovieClip.addEventListener(Event.ENTER_FRAME, drawGIF);
 				exportMovieClip.gotoAndPlay(1);
+				
+				// Refresh Generate Button Enabled
+				refreshGeneratable();
 			}
-			
+			// Draw gif with snapshot
 			protected function drawGIF(e:Event):void {
 				var currentFrame:int = exportMovieClip.currentFrame;
 				var totalFrame:int = exportMovieClip.totalFrames;
 				
-				// 生成帧图片
+				// Generate bitmap of current frame
 				var exportBitmap:BitmapData = new BitmapData(exportWidth, explicitHeight, true, exportTransColor);
 				exportBitmap.fillRect(new Rectangle(0,0,exportWidth,explicitHeight), 0xFF000000 | exportTransColor);
 				exportBitmap.draw(swf_expoter);
 
-				// 添加帧
-				gif.addFrame(exportBitmap);
-				refreshTitle("生成 " + currentFrame + "/" + totalFrame +
+				// Add bitmap into scree
+				exportTimesStack += originalTimes;
+				while(exportTimesStack >= exportTimes) {
+					exportTimesStack -= exportTimes;
+					gif.addFrame(exportBitmap);
+				}
+				refreshTitle("Generate " + currentFrame + "/" + totalFrame +
 				" [" + int(100.0 * currentFrame / totalFrame) + "%]");
 				
-				// 如果截图完毕，开始存图片吧
+				// Write gif file if finished
 				if(currentFrame == totalFrame) {
 					exportMovieClip.removeEventListener(Event.ENTER_FRAME, drawGIF);
 
@@ -208,8 +234,21 @@
 						Alert.show(e.toString());
 					}
 					swf_expoter.source = null;
-					btn_generate.enabled = true;
+					gif = null;
+					
+					// Refresh Generate Button Enabled
+					refreshGeneratable();
 				}
+			}
+			
+			protected function refreshGeneratable():void {
+				var enable:Boolean = true;
+				if(txt_path.text == "" || txt_path_out.text == "") enable = false;
+				if(originalOldVersion) enable = false;
+				if(swf_cntr.content as MovieClip == null) enable = false;
+				if(gif != null) enable = false;
+				
+				btn_generate.enabled = enable;
 			}
 		]]>
 	</fx:Script>
@@ -220,13 +259,13 @@
 	<s:Group width="100%" height="100%" fontFamily="Microsoft YaHei">
 		<s:Group left="10" right="10" top="10">
 			<s:Button width="94" label="Open SWF" click="btn_openSWF(event)"/>
-			<s:TextInput id="txt_path" y="0" left="102" right="113" change="refreshExportPath(event)" />
+			<s:TextInput id="txt_path" y="0" left="102" right="113" change="txt_path_changeHandler(event)" />
 			<s:Button x="0" y="29" width="94" label="Export Path" click="btn_exportGIF(event)"/>
 			<s:TextInput id="txt_path_out" y="28" left="102" right="113" change="refreshExportPath(event)" />
 			
 			<s:Button right="0" width="105" label="Export" visible="false" click="btn_generatePNG(event)"/>
 			<s:Button id="btn_generate" right="0" top="0" bottom="0" width="105" label="Export"
-					  enabled="false" click="btn_generateGIF(event)"/>
+					  click="btn_generateGIF(event)"/>
 		</s:Group>
 		<s:Group left="10" right="10" top="68" bottom="10">
 			<s:Group left="0" right="202" top="0" bottom="0" clipAndEnableScrolling="true">
