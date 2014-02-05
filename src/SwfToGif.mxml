@@ -195,8 +195,7 @@
 			<s:Button width="94" label="Open SWF" click="btn_openSWF(event)"/>
 			<s:TextInput id="txt_path" y="0" left="102" right="113" editable="false" />
 			<s:Button x="0" y="29" width="94" label="Export Path" click="btn_exportGIF(event)"/>
-			<s:TextInput id="txt_path_out" y="28" left="102" right="113"
-						 text="C:\Users\DeadPeople\Desktop\ZZZ.gif"/>
+			<s:TextInput id="txt_path_out" y="28" left="102" right="113"/>
 			
 			<s:Button right="0" width="105" label="Export" visible="false" click="btn_generatePNG(event)"/>
 			<s:Button id="btn_generate" right="0" top="0" bottom="0" width="105" label="Export"
