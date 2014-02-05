@@ -140,13 +140,9 @@
 			
 			// Export png
 			protected function btn_generatePNG(event:MouseEvent):void {
-				var width:int = Number(txt_width.text);
-				var height:int = Number(txt_height.text);
-				
-				var info:LoaderInfo = swf_expoter.content.loaderInfo;
 				var pngEncoder:PNGEncoder = new PNGEncoder();
-				var bitMapData:BitmapData = new BitmapData(width, height, true, 0x000000); 
-				bitMapData.draw(swf_expoter);
+				var bitMapData:BitmapData = new BitmapData(swf_cntr.width, swf_cntr.height, true, 0x000000); 
+				bitMapData.draw(swf_cntr);
 				
 				var imageByteArray:ByteArray = pngEncoder.encode(bitMapData);
 				
@@ -163,7 +159,11 @@
 			}
 			
 			protected function btn_generateGIF(event:MouseEvent):void {
-				swf_expoter.source = txt_path.text;
+				if(event.ctrlKey) {
+					btn_generatePNG(event);
+				} else {
+					swf_expoter.source = txt_path.text;
+				}
 			}
 			
 			
