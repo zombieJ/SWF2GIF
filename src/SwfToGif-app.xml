@@ -163,12 +163,12 @@
 			<!-- <contentType></contentType> -->
 			
 			<!-- The icon to display for the file type. Optional. -->
-			<!-- <icon>
-				<image16x16></image16x16>
-				<image32x32></image32x32>
-				<image48x48></image48x48>
-				<image128x128></image128x128>
-			</icon> -->
+			<icon>
+				<image16x16>assets/logo16.png</image16x16>
+				<image32x32>assets/logo32.png</image32x32>
+				<image48x48>assets/logo48.png</image48x48>
+				<image128x128>assets/logo128.png</image128x128>
+			</icon>
 			
 		<!-- </fileType> -->
 	<!-- </fileTypes> -->
