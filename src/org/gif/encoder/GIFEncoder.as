@@ -8,14 +8,17 @@
 
 package org.gif.encoder
 {
-	import flash.utils.ByteArray;
-	import flash.display.BitmapData;
 	import flash.display.Bitmap;
-	import org.gif.encoder.NeuQuant
+	import flash.display.BitmapData;
+	import flash.net.URLRequest;
 	import flash.net.URLRequestHeader;
 	import flash.net.URLRequestMethod;
-	import flash.net.URLRequest;
 	import flash.net.navigateToURL;
+	import flash.utils.ByteArray;
+	
+	import mx.controls.Alert;
+	
+	import org.gif.encoder.NeuQuant;
 	
 	public class GIFEncoder
 	{
@@ -40,6 +43,8 @@ package org.gif.encoder
 	    protected var firstFrame:Boolean = true;
 	    protected var sizeSet:Boolean = false; // if false, get size from first frame
 	    protected var sample:int = 10; // default sample interval for quantizer
+		
+		protected var nq:NeuQuant;
 		
 		/**
 		* Sets the delay time between each frame, or changes it for subsequent frames
@@ -124,14 +129,13 @@ package org.gif.encoder
 		    var ok:Boolean = true;
 			
 		    try {
-				
 				image = new Bitmap ( im );
 				if (!sizeSet) setSize(image.width, image.height);
+					
 				getImagePixels(); // convert to correct format if necessary
 				analyzePixels(); // build color table & map pixels
 				
-				if (firstFrame) 
-				{
+				if (firstFrame) {
 					writeLSD(); // logical screen descriptior
 					writePalette(); // global color table
 					if (repeat >= 0) 
@@ -139,17 +143,16 @@ package org.gif.encoder
 						// use NS app extension to indicate reps
 						writeNetscapeExt();
 					}
-		      }
+				}
 			  
-			  writeGraphicCtrlExt(); // write graphic control extension
-		      writeImageDesc(); // image descriptor
-		      if (!firstFrame) writePalette(); // local color table
-		      writePixels(); // encode and write pixel data
-		      firstFrame = false;
+				writeGraphicCtrlExt(); // write graphic control extension
+			    writeImageDesc(); // image descriptor
+			    if (!firstFrame) writePalette(); // local color table
+			    writePixels(); // encode and write pixel data
+			    firstFrame = false;
 		    } catch (e:Error) {
 		      ok = false;
 		    }
-		    
 			return ok;
 			
 		}
@@ -179,9 +182,7 @@ package org.gif.encoder
 		* This method is actually called by the start method
 		*/
 		
-		protected function reset ( ):void
-		{
-			
+		protected function reset ( ):void {
 			// reset for subsequent use
 			transIndex = 0;
 			image = null;
@@ -191,6 +192,7 @@ package org.gif.encoder
 		    closeStream = false;
 		    firstFrame = true;
 			
+			nq = null;
 		}
 
 		/**
@@ -257,7 +259,6 @@ package org.gif.encoder
 		
 		public function start():Boolean
 		{
-			
 			reset(); 
 		    var ok:Boolean = true;
 		    closeStream = false;
@@ -278,13 +279,14 @@ package org.gif.encoder
 		
 		protected function analyzePixels():void
 		{
-		    
 			var len:int = pixels.length;
 		    var nPix:int = len / 3;
 		    indexedPixels = new ByteArray;
-		    var nq:NeuQuant = new NeuQuant(pixels, len, sample);
-		    // initialize quantizer
-		    colorTab = nq.process(); // create reduced palette
+		    if(nq == null) {
+				nq = new NeuQuant(pixels, len, sample);
+			    // initialize quantizer
+			    colorTab = nq.process(); // create reduced palette
+			}
 		    // map image pixels to new palette
 		    var k:int = 0;
 		    for (var j:int = 0; j < nPix; j++) {
@@ -297,7 +299,7 @@ package org.gif.encoder
 		    palSize = 7;
 		    // get closest match to transparent color if specified
 		    if (transparent != null) {
-		      transIndex = findClosest(transparent);
+		    	transIndex = findClosest(transparent);
 		    }
 		}
 		

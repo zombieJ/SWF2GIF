@@ -148,6 +148,7 @@
 			
 			protected var exportBitmapList:Array;
 			protected var exportTimer:Timer;
+			protected var exportDate:Number;
 			protected function drawGIF(e:Event):void {
 				var currentFrame:int = exportMovieClip.currentFrame;
 				var totalFrame:int = exportMovieClip.totalFrames;
@@ -166,8 +167,9 @@
 					exportMovieClip.removeEventListener(Event.ENTER_FRAME, drawGIF);
 
 					exportBitmapListPos = 0;
+					exportDate = (new Date()).time;
 					
-					exportTimer = new Timer(500);
+					exportTimer = new Timer(200);
 					exportTimer.addEventListener(TimerEvent.TIMER, exportTimerHandler);
 					exportTimer.start();
 				}
@@ -183,7 +185,7 @@
 					
 				var exportBitmap:BitmapData = exportBitmapList[exportBitmapListPos];
 				gif.addFrame(exportBitmap);
-					
+				
 				exportBitmapListPos++;
 				refreshTitle("生成 " + int(100.0 * exportBitmapListPos / exportBitmapList.length) + "%");
 
@@ -195,7 +197,11 @@
 						fs.open(exportFile, FileMode.WRITE);
 						fs.writeBytes(gif.stream, 0, gif.stream.length);
 						fs.close();
-						Alert.show("导出完成，" + "导出" + exportBitmapListPos + "帧。", "完成");
+						
+						var ms:Number = (new Date()).time - exportDate;
+						
+						Alert.show("导出完成，" + "导出" + exportBitmapListPos +
+							"帧。耗时" + int(ms / 1000) + "秒", "完成");
 						refreshTitle();
 					} catch(e:Error) {
 						Alert.show(e.toString());
