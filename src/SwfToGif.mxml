@@ -120,8 +120,8 @@
 				exportFrameRate = Number(txt_fps.text);
 				exportTransColor = uint(txt_transColor.text);
 				
-				exportBitmapList = new Array();
 				exportFile = new File(txt_path_out.text);
+				exportDate = (new Date()).time;
 				
 				// 初始化转换器
 				gif = new GIFEncoder();
@@ -146,8 +146,6 @@
 			protected var exportFile:File;
 			protected var exportMovieClip:MovieClip;
 			
-			protected var exportBitmapList:Array;
-			protected var exportTimer:Timer;
 			protected var exportDate:Number;
 			protected function drawGIF(e:Event):void {
 				var currentFrame:int = exportMovieClip.currentFrame;
@@ -159,39 +157,15 @@
 				exportBitmap.draw(swf_expoter);
 
 				// 添加帧
-				exportBitmapList.push(exportBitmap);
-				refreshTitle("截图 " + currentFrame + "/" + totalFrame);
+				gif.addFrame(exportBitmap);
+				refreshTitle("生成 " + currentFrame + "/" + totalFrame +
+				" [" + int(100.0 * currentFrame / totalFrame) + "%]");
 				
 				// 如果截图完毕，开始存图片吧
 				if(currentFrame == totalFrame) {
 					exportMovieClip.removeEventListener(Event.ENTER_FRAME, drawGIF);
 
-					exportBitmapListPos = 0;
-					exportDate = (new Date()).time;
-					
-					exportTimer = new Timer(200);
-					exportTimer.addEventListener(TimerEvent.TIMER, exportTimerHandler);
-					exportTimer.start();
-				}
-			}
-			
-			// 计时器导出（为了延迟卡的现象 T_T）
-			protected var exportBitmapListPos:int;
-			protected function exportTimerHandler(event:TimerEvent):void {
-				if(exportBitmapListPos >= exportBitmapList.length) {
-					refreshTitle("死循环！");
-					return;
-				}
-					
-				var exportBitmap:BitmapData = exportBitmapList[exportBitmapListPos];
-				gif.addFrame(exportBitmap);
-				
-				exportBitmapListPos++;
-				refreshTitle("生成 " + int(100.0 * exportBitmapListPos / exportBitmapList.length) + "%");
-
-				if(exportBitmapListPos >= exportBitmapList.length) {
 					gif.finish();
-					
 					var fs:FileStream = new FileStream();
 					try {
 						fs.open(exportFile, FileMode.WRITE);
@@ -200,17 +174,12 @@
 						
 						var ms:Number = (new Date()).time - exportDate;
 						
-						Alert.show("导出完成，" + "导出" + exportBitmapListPos +
+						Alert.show("导出完成，" + "导出" + totalFrame +
 							"帧。耗时" + int(ms / 1000) + "秒", "完成");
 						refreshTitle();
 					} catch(e:Error) {
 						Alert.show(e.toString());
 					}
-
-					exportTimer.removeEventListener(TimerEvent.TIMER, exportTimerHandler);
-					exportTimer.stop();
-
-					exportBitmapList = null;
 					swf_expoter.source = null;
 					btn_generate.enabled = true;
 				}
@@ -221,33 +190,33 @@
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
-	<s:Group width="100%" height="100%" fontFamily="微软雅黑">
+	<s:Group width="100%" height="100%" fontFamily="Microsoft YaHei">
 		<s:Group left="10" right="10" top="10">
-			<s:Button width="94" label="选择SWF文件" click="btn_openSWF(event)"/>
+			<s:Button width="94" label="Open SWF" click="btn_openSWF(event)"/>
 			<s:TextInput id="txt_path" y="0" left="102" right="113" editable="false" />
-			<s:Button x="0" y="29" width="94" label="导出GIF路径" click="btn_exportGIF(event)"/>
+			<s:Button x="0" y="29" width="94" label="Export Path" click="btn_exportGIF(event)"/>
 			<s:TextInput id="txt_path_out" y="28" left="102" right="113"
 						 text="C:\Users\DeadPeople\Desktop\ZZZ.gif"/>
 			
-			<s:Button right="0" width="105" label="导出" visible="false" click="btn_generatePNG(event)"/>
-			<s:Button id="btn_generate" right="0" top="0" bottom="0" width="105" label="导出"
+			<s:Button right="0" width="105" label="Export" visible="false" click="btn_generatePNG(event)"/>
+			<s:Button id="btn_generate" right="0" top="0" bottom="0" width="105" label="Export"
 					  enabled="false" click="btn_generateGIF(event)"/>
 		</s:Group>
-		<s:Group left="10" right="10" top="68" bottom="27">
+		<s:Group left="10" right="10" top="68" bottom="10">
 			<s:SWFLoader id="swf_cntr" left="0" right="202" top="0" bottom="0" complete="swf_completeView(event)"/>
 			<s:Group right="0" top="0" bottom="0" width="194">
-				<s:Label y="0" left="0" height="23" text="导出宽度" verticalAlign="middle"/>
-				<s:Label x="0" y="31" height="23" text="导出高度" verticalAlign="middle"/>
-				<s:Label x="0" y="62" height="23" text="动画帧率" verticalAlign="middle"/>
-				<s:Label x="0" y="93" height="23" text="透明颜色" verticalAlign="middle"/>
-				<s:TextInput id="txt_width" y="0" right="0" change="resize(event)"/>
-				<s:TextInput id="txt_height" y="31" right="0" change="resize(event)"/>
-				<s:TextInput id="txt_fps" y="62" right="0"/>
-				<s:TextInput id="txt_transColor" y="93" right="0" text="0xFFFEFD"/>
+				<s:Label y="0" left="0" height="23" text="Width" verticalAlign="middle"/>
+				<s:Label x="0" y="31" height="23" text="Height" verticalAlign="middle"/>
+				<s:Label x="0" y="62" height="23" text="FrameRate" verticalAlign="middle"/>
+				<s:Label x="0" y="93" height="23" text="Transform" verticalAlign="middle"/>
+				<s:TextInput id="txt_width" y="0" right="0" width="120" change="resize(event)"/>
+				<s:TextInput id="txt_height" y="31" right="0" width="120" change="resize(event)"/>
+				<s:TextInput id="txt_fps" y="62" right="0" width="120"/>
+				<s:TextInput id="txt_transColor" y="93" right="0" width="120" text="0xFFFEFD"/>
 			</s:Group>
 			
 		</s:Group>
-		<s:Group left="10" right="10" bottom="10" height="10">
+		<s:Group left="10" right="10" bottom="0" height="5">
 			<s:SWFLoader id="swf_expoter" x="0" y="0" complete="swf_completeExport(event)"/>
 		</s:Group>
 	</s:Group>
