@@ -1,4 +1,4 @@
-SWF2GIF
+![logo](https://raw.github.com/zombieJ/SWF2GIF/master/src/assets/logo32.png) SWF2GIF
 =======
 This is used for converting swf to gif with GUI. Convert by frame step.
 You can get high quality gif animation file by configuring export size.
