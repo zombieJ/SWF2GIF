@@ -12,6 +12,9 @@ You can get high quality gif animation file by configuring export size.
 
 ![gif](https://raw.github.com/zombieJ/SWF2GIF/master/images/ZZZ.gif)
 
+
+#####About
+###########
 * Flex Project
 * Use GIFEncoder
     * Base class :  http://www.java2s.com/Code/Java/2D-Graphics-GUI/AnimatedGifEncoder.htm
