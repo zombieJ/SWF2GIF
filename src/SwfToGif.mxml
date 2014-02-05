@@ -2,7 +2,8 @@
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
 					   xmlns:s="library://ns.adobe.com/flex/spark"
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
-					   width="600" height="300" contentCreationComplete="contentCreated(event)">
+					   width="600" height="300" minWidth="400" minHeight="300"
+					   contentCreationComplete="contentCreated(event)">
 	
 	<fx:Script>
 		<![CDATA[
@@ -11,6 +12,21 @@
 			import mx.graphics.codec.PNGEncoder;
 			
 			import org.gif.encoder.GIFEncoder;
+			
+			
+			protected var originalWidth:int;
+			protected var originalHeight:int;
+			protected var originalFrameRate:int;
+			
+			protected var gif:GIFEncoder;
+			protected var exportWidth:int;
+			protected var exportHeight:int;
+			protected var exportFrameRate:int;
+			protected var exportTransColor:uint;
+			protected var exportFile:File;
+			protected var exportMovieClip:MovieClip;
+			
+			protected var exportDate:Number;
 			
 			protected function contentCreated(event:FlexEvent):void {
 				refreshTitle();
@@ -29,6 +45,7 @@
 				var path:String = e.target.nativePath;
 				txt_path.text = path;
 				swf_cntr.source = path;
+				refreshExportPath();
 			}
 			
 			
@@ -41,10 +58,22 @@
 			}
 			private function exportSelectpd(e:Event):void {
 				var path:String = e.target.nativePath;
+				txt_path_out.text = path + File.separator;
+				refreshExportPath();
+			}
+			protected function refreshExportPath(e:Event = null):void {
+				var path:String = txt_path_out.text;
 				var swf_path:String = txt_path.text;
-				var file:File = new File(swf_path);
-				var fileName:String = file.name.replace(/\.swf/i, ".gif");
-				txt_path_out.text = path + File.separator + fileName;
+				var fileName:String = "";
+				
+				// Auto attach file name
+				if(path.length != 0 && path.charAt(path.length - 1) == File.separator) {
+					try {
+						var file:File = new File(swf_path);
+						if(file.exists) fileName = file.name.replace(/\.swf/i, ".gif");
+					} catch(error:Error) {}
+					txt_path_out.text = path + fileName;
+				}
 			}
 
 			
@@ -52,9 +81,12 @@
 			// swf载入完成操作
 			protected function swf_completeView(e:Event):void {
 				var info:LoaderInfo = swf_cntr.content.loaderInfo;
-				txt_width.text = info.width + "";
-				txt_height.text = info.height + "";
-				txt_fps.text = info.frameRate + "";
+				originalWidth = info.width;
+				originalHeight = info.height;
+				originalFrameRate = info.frameRate;
+				txt_width.text = originalWidth + "";
+				txt_height.text = originalHeight + "";
+				txt_fps.text = originalFrameRate + "";
 				
 				// 不支持旧版本的动画
 				if (swf_cntr.content is AVM1Movie) {
@@ -79,6 +111,10 @@
 
 				swf_expoter.width = width;
 				swf_expoter.height = height;
+				
+				var mc:MovieClip = swf_expoter.content as MovieClip;
+				mc.scaleX = width / originalWidth;
+				mc.scaleY = height / originalHeight;
 			}
 			
 			
@@ -138,15 +174,6 @@
 				exportMovieClip.gotoAndPlay(1);
 			}
 			
-			protected var gif:GIFEncoder;
-			protected var exportWidth:int;
-			protected var exportHeight:int;
-			protected var exportFrameRate:int;
-			protected var exportTransColor:uint;
-			protected var exportFile:File;
-			protected var exportMovieClip:MovieClip;
-			
-			protected var exportDate:Number;
 			protected function drawGIF(e:Event):void {
 				var currentFrame:int = exportMovieClip.currentFrame;
 				var totalFrame:int = exportMovieClip.totalFrames;
@@ -193,30 +220,33 @@
 	<s:Group width="100%" height="100%" fontFamily="Microsoft YaHei">
 		<s:Group left="10" right="10" top="10">
 			<s:Button width="94" label="Open SWF" click="btn_openSWF(event)"/>
-			<s:TextInput id="txt_path" y="0" left="102" right="113" editable="false" />
+			<s:TextInput id="txt_path" y="0" left="102" right="113" change="refreshExportPath(event)" />
 			<s:Button x="0" y="29" width="94" label="Export Path" click="btn_exportGIF(event)"/>
-			<s:TextInput id="txt_path_out" y="28" left="102" right="113"/>
+			<s:TextInput id="txt_path_out" y="28" left="102" right="113" change="refreshExportPath(event)" />
 			
 			<s:Button right="0" width="105" label="Export" visible="false" click="btn_generatePNG(event)"/>
 			<s:Button id="btn_generate" right="0" top="0" bottom="0" width="105" label="Export"
 					  enabled="false" click="btn_generateGIF(event)"/>
 		</s:Group>
 		<s:Group left="10" right="10" top="68" bottom="10">
-			<s:SWFLoader id="swf_cntr" left="0" right="202" top="0" bottom="0" complete="swf_completeView(event)"/>
+			<s:Group left="0" right="202" top="0" bottom="0" clipAndEnableScrolling="true">
+				<s:SWFLoader id="swf_cntr" height="100%" width="100%" complete="swf_completeView(event)"/>
+			</s:Group>
 			<s:Group right="0" top="0" bottom="0" width="194">
 				<s:Label y="0" left="0" height="23" text="Width" verticalAlign="middle"/>
 				<s:Label x="0" y="31" height="23" text="Height" verticalAlign="middle"/>
 				<s:Label x="0" y="62" height="23" text="FrameRate" verticalAlign="middle"/>
 				<s:Label x="0" y="93" height="23" text="Transform" verticalAlign="middle"/>
-				<s:TextInput id="txt_width" y="0" right="0" width="120" change="resize(event)"/>
-				<s:TextInput id="txt_height" y="31" right="0" width="120" change="resize(event)"/>
+				<s:TextInput id="txt_width" y="0" right="0" width="120"/>
+				<s:TextInput id="txt_height" y="31" right="0" width="120"/>
 				<s:TextInput id="txt_fps" y="62" right="0" width="120"/>
 				<s:TextInput id="txt_transColor" y="93" right="0" width="120" text="0xFFFEFD"/>
 			</s:Group>
 			
 		</s:Group>
 		<s:Group left="10" right="10" bottom="0" height="5">
-			<s:SWFLoader id="swf_expoter" x="0" y="0" complete="swf_completeExport(event)"/>
+			<s:SWFLoader id="swf_expoter" x="0" y="0" complete="swf_completeExport(event)"
+						 scaleContent="false"/>
 		</s:Group>
 	</s:Group>
 </s:WindowedApplication>
