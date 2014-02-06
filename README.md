@@ -3,6 +3,8 @@
 This is used for converting swf to gif with GUI. Convert by frame step.
 You can get high quality gif animation file by configuring export size.
 
+Getting Installer click here: [Download](https://github.com/zombieJ/SWF2GIF/raw/master/dist/SwfToGif.air)
+
 ![screenshot](https://raw.github.com/zombieJ/SWF2GIF/master/images/screenshot.png)
 
 * Support converting swf using actionScript 3.0
