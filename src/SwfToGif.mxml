@@ -2,7 +2,7 @@
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
 					   xmlns:s="library://ns.adobe.com/flex/spark"
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
-					   width="600" height="300" minWidth="400" minHeight="300"
+					   width="600" height="300" minWidth="400" minHeight="350"
 					   contentCreationComplete="contentCreated(event)">
 	
 	<fx:Script>
@@ -26,6 +26,7 @@
 			protected var exportWidth:int;
 			protected var exportHeight:int;
 			protected var exportFrameRate:int;
+			protected var exportFrameRateOri:int;
 			protected var exportTransColor:uint;
 			protected var exportFile:File;
 			protected var exportMovieClip:MovieClip;
@@ -99,11 +100,11 @@
 				originalWidth = info.width;
 				originalHeight = info.height;
 				originalFrameRate = info.frameRate;
-				originalTimes = 1000 / originalFrameRate;
 				
 				txt_width.text = originalWidth + "";
 				txt_height.text = originalHeight + "";
 				txt_fps.text = originalFrameRate + "";
+				txt_fps_ori.text = originalFrameRate + "";
 				
 				// Not support old version swf
 				if (swf_cntr.content is AVM1Movie) {
@@ -172,17 +173,20 @@
 				exportWidth = Number(txt_width.text);
 				explicitHeight = Number(txt_height.text);
 				exportFrameRate = Number(txt_fps.text);
+				exportFrameRateOri = Number(txt_fps_ori.text);
 				exportTransColor = uint(txt_transColor.text);
 				
 				exportFile = new File(txt_path_out.text);
 				exportDate = (new Date()).time;
-				exportTimes = 1000 / exportFrameRate;
+				originalTimes = int(1000 / exportFrameRateOri);
+				exportTimes = int(1000 / exportFrameRate);
+				exportTimesStack = 0;
 				
 				// Initail recorder
 				gif = new GIFEncoder();
-				gif.setFrameRate(exportFrameRate);
+				gif.setFrameRate(exportFrameRate * sld_speed.value);
 				gif.setTransparent(exportTransColor);
-				gif.setQuality(100);
+				gif.setQuality(sld_quality.value);
 				gif.setRepeat(0);
 				
 				// Start recording
@@ -190,7 +194,7 @@
 
 				exportMovieClip = swf_expoter.content as MovieClip;
 				exportMovieClip.addEventListener(Event.ENTER_FRAME, drawGIF);
-				exportMovieClip.gotoAndPlay(1);
+				exportMovieClip.gotoAndPlay(exportMovieClip.totalFrames);
 				
 				// Refresh Generate Button Enabled
 				refreshGeneratable();
@@ -275,11 +279,19 @@
 				<s:Label y="0" left="0" height="23" text="Width" verticalAlign="middle"/>
 				<s:Label x="0" y="31" height="23" text="Height" verticalAlign="middle"/>
 				<s:Label x="0" y="62" height="23" text="FrameRate" verticalAlign="middle"/>
+				<s:Label x="0" bottom="0" height="23" text="Origin FPS" verticalAlign="middle"/>
 				<s:Label x="0" y="93" height="23" text="Transform" verticalAlign="middle"/>
+				<s:Label x="0" y="124" height="23" text="Quality" verticalAlign="middle"/>
+				<s:Label x="-1" y="155" height="23" text="Speed" verticalAlign="middle"/>
 				<s:TextInput id="txt_width" y="0" right="0" width="120"/>
 				<s:TextInput id="txt_height" y="31" right="0" width="120"/>
 				<s:TextInput id="txt_fps" y="62" right="0" width="120"/>
+				<s:TextInput id="txt_fps_ori" right="0" bottom="0" width="120"/>
 				<s:TextInput id="txt_transColor" y="93" right="0" width="120" text="0xFFFEFD"/>
+				<s:HSlider id="sld_quality" x="71" y="130" width="123" maximum="100" minimum="0"
+						   stepSize="1" value="10"/>
+				<s:HSlider id="sld_speed" x="71" y="160" width="123" maximum="10" minimum="1"
+						   stepSize="0.1" value="1"/>
 			</s:Group>
 			
 		</s:Group>
