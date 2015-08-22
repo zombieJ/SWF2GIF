@@ -5,14 +5,15 @@ You can get high quality gif animation file by configuring export size.
 
 Getting Installer click here: [Download](https://github.com/zombieJ/SWF2GIF/raw/master/dist/SwfToGif.air)
 
-![screenshot](https://raw.github.com/zombieJ/SWF2GIF/master/images/screenshot.png)
+![screenshot](https://raw.githubusercontent.com/zombieJ/SWF2GIF/46f4e50208cd5898b20189775b5727f0a5bc9ca9/images/screenshot.png)
 
 * Support converting swf using actionScript 3.0
 * Adjust size &amp; frameRate to export your target gif
 * Export without distortion
 * Click export by pressing `ctrl` will export `png` snapshot
+* Support customize stroke export
 
-![gif](https://raw.github.com/zombieJ/SWF2GIF/master/images/ZZZ.gif)
+![gif](https://raw.githubusercontent.com/zombieJ/SWF2GIF/46f4e50208cd5898b20189775b5727f0a5bc9ca9/images/ZZZ.gif)
 
 
 #####About
