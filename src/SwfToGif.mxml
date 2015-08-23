@@ -2,7 +2,8 @@
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
 					   xmlns:s="library://ns.adobe.com/flex/spark"
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
-					   width="600" height="300" minWidth="400" minHeight="350"
+					   width="600" height="400" minWidth="400" minHeight="350"
+					   showStatusBar="false"
 					   contentCreationComplete="contentCreated(event)">
 	
 	<fx:Script>
@@ -11,18 +12,22 @@
 			import mx.events.FlexEvent;
 			import mx.graphics.codec.PNGEncoder;
 			
+			import org.bytearray.gif.encoder.GIFEncoder;
 			import org.gif.encoder.GIFEncoder;
 			
 			import spark.events.TextOperationEvent;
-			
-			
+
+			[Bindable]
+			protected var strokeWidth:int = 0;
+
 			protected var originalWidth:int;
 			protected var originalHeight:int;
 			protected var originalFrameRate:int;
 			protected var originalTimes:int;		// Each frame takes millionSecond
 			protected var originalOldVersion:Boolean = false;
 			
-			protected var gif:GIFEncoder;
+			//protected var gif:org.gif.encoder.GIFEncoder;
+			protected var gif:Object;
 			protected var exportWidth:int;
 			protected var exportHeight:int;
 			protected var exportFrameRate:int;
@@ -183,10 +188,10 @@
 				exportTimesStack = 0;
 				
 				// Initail recorder
-				gif = new GIFEncoder();
+				gif = fastMode.selected ? new org.gif.encoder.GIFEncoder() : new org.bytearray.gif.encoder.GIFEncoder();
 				gif.setFrameRate(exportFrameRate * sld_speed.value);
 				gif.setTransparent(exportTransColor);
-				gif.setQuality(sld_quality.value);
+				gif.setQuality(quality.value);
 				gif.setRepeat(0);
 				
 				// Start recording
@@ -273,7 +278,11 @@
 		</s:Group>
 		<s:Group left="10" right="10" top="68" bottom="10">
 			<s:Group left="0" right="202" top="0" bottom="0" clipAndEnableScrolling="true">
-				<s:SWFLoader id="swf_cntr" height="100%" width="100%" complete="swf_completeView(event)"/>
+				<s:SWFLoader id="swf_cntr" height="100%" width="100%" complete="swf_completeView(event)">
+					<s:filters>
+						<s:GlowFilter color="0xFFFFFF" blurX="{strokeWidth}" blurY="{strokeWidth}" alpha="1" strength="255" />
+					</s:filters>
+				</s:SWFLoader>
 			</s:Group>
 			<s:Group right="0" top="0" bottom="0" width="194">
 				<s:Label y="0" left="0" height="23" text="Width" verticalAlign="middle"/>
@@ -282,22 +291,33 @@
 				<s:Label x="0" bottom="0" height="23" text="Origin FPS" verticalAlign="middle"/>
 				<s:Label x="0" y="93" height="23" text="Transform" verticalAlign="middle"/>
 				<s:Label x="0" y="124" height="23" text="Quality" verticalAlign="middle"/>
-				<s:Label x="-1" y="155" height="23" text="Speed" verticalAlign="middle"/>
+				<s:Label x="0" y="154" height="23" text="Speed" verticalAlign="middle"/>
+				<s:Label x="0" y="184" height="23" text="Stroke({strokeWidth})" verticalAlign="middle"/>
+
 				<s:TextInput id="txt_width" y="0" right="0" width="120"/>
 				<s:TextInput id="txt_height" y="31" right="0" width="120"/>
 				<s:TextInput id="txt_fps" y="62" right="0" width="120"/>
 				<s:TextInput id="txt_fps_ori" right="0" bottom="0" width="120"/>
 				<s:TextInput id="txt_transColor" y="93" right="0" width="120" text="0xFFFEFD"/>
-				<s:HSlider id="sld_quality" x="71" y="130" width="123" maximum="100" minimum="0"
-						   stepSize="1" value="10"/>
+
+
+				<s:HSlider id="quality" y="130" right="0" width="120" maximum="100" minimum="1"
+						   stepSize="1" value="1"/>
 				<s:HSlider id="sld_speed" x="71" y="160" width="123" maximum="10" minimum="1"
 						   stepSize="0.1" value="1"/>
+				<s:HSlider id="stroke" y="190" right="0" width="120" maximum="10" minimum="0"
+						   stepSize="1" value="@{strokeWidth}"/>
+				<s:CheckBox id="fastMode" y="209" left="74" label="Fast Mode" selected="true"/>
 			</s:Group>
 			
 		</s:Group>
 		<s:Group left="10" right="10" bottom="0" height="5">
 			<s:SWFLoader id="swf_expoter" x="0" y="0" complete="swf_completeExport(event)"
-						 scaleContent="false"/>
+						 scaleContent="false">
+				<s:filters>
+					<s:GlowFilter color="0xFFFFFF" blurX="{strokeWidth}" blurY="{strokeWidth}" alpha="1" strength="255" />
+				</s:filters>
+			</s:SWFLoader>
 		</s:Group>
 	</s:Group>
 </s:WindowedApplication>
